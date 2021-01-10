@@ -18,7 +18,7 @@ if (Deno.build.os === "darwin") {
   filenameSuffix = ".dylib";
 }
 
-const filename = `./${filenamePrefix}${filenameBase}${filenameSuffix}`;
+const filename = `./rust-plugin/target/debug/${filenamePrefix}${filenameBase}${filenameSuffix}`;
 
 // This will be checked against open resources after Plugin.close()
 // in runTestClose() below.

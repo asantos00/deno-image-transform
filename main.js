@@ -26,13 +26,29 @@ const resourcesPre = Deno.resources();
 
 const rid = Deno.openPlugin(filename);
 
-const { testSync, testAsync } = Deno.core.ops();
+const { testSync, testAsync, toGreyScale } = Deno.core.ops();
 if (!(testSync > 0)) {
   throw "bad op id for testSync";
 }
 if (!(testAsync > 0)) {
   throw "bad op id for testAsync";
 }
+if (!(toGreyScale > 0)) {
+  throw "bad op id for toGreyScale";
+}
+
+function runToGreyScale() {
+  let arr = new Uint8Array([0, 1, 3, 4]);
+
+  console.log(`DENO: before toGreyScale ${arr}`);
+
+  const response = Deno.core.dispatch(toGreyScale, arr);
+
+  console.log(`DENO: toGreyScale result: ${response}`);
+  console.log(`DENO: after toGreyScale ${arr}`);
+}
+
+runToGreyScale();
 
 const textDecoder = new TextDecoder();
 

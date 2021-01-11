@@ -9,6 +9,22 @@ use futures::future::FutureExt;
 pub fn deno_plugin_init(interface: &mut dyn Interface) {
   interface.register_op("testSync", op_test_sync);
   interface.register_op("testAsync", op_test_async);
+  interface.register_op("toGreyScale", op_to_grey_scale);
+}
+
+fn op_to_grey_scale(
+  _interface: &mut dyn Interface,
+  zero_copy: &mut [ZeroCopyBuf],
+) -> Op {
+  println!("RUST: op_to_grey_scale start.");
+  let arg0 = &mut zero_copy[0];
+  let arr: &mut[u8] = arg0.as_mut();
+  for value in arr.iter_mut() {
+    *value = *value + 10;
+  }
+  println!("RUST: op_to_grey_scale end.");
+  let result_box: Box<[u8]> = Box::new([]);
+  Op::Sync(result_box)
 }
 
 fn op_test_sync(

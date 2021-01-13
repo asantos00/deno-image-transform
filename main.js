@@ -4,6 +4,7 @@
 // type definitions missing, at least noting that the example only works in JS and will fail to work in TS.
 
 // Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
+import { decode, encode } from "https://deno.land/x/jpegts@1.1/mod.ts";
 
 const filenameBase = "test_plugin";
 
@@ -37,83 +38,87 @@ if (!(toGreyScale > 0)) {
   throw "bad op id for toGreyScale";
 }
 
-function runToGreyScale() {
-  let arr = new Uint8Array([0, 1, 3, 4]);
+async function runToGreyScale(file) {
+  let raw = await Deno.readFile(`images/${file}`);
 
-  console.log(`DENO: before toGreyScale ${arr}`);
+  const image = decode(raw);
 
-  const response = Deno.core.dispatch(toGreyScale, arr);
+  Deno.core.dispatch(toGreyScale, image.data);
 
-  console.log(`DENO: toGreyScale result: ${response}`);
-  console.log(`DENO: after toGreyScale ${arr}`);
+  raw = encode(image, 100);
+
+  await Deno.writeFile(`images/output/${file}`, raw.data);
+
+  console.log(`images/${file} > greyScale > "images/output/${file}"`);
 }
 
-runToGreyScale();
+await runToGreyScale("dice.jpg");
+await runToGreyScale("dino.jpg");
 
-const textDecoder = new TextDecoder();
+// const textDecoder = new TextDecoder();
 
-function runTestSync() {
-  const response = Deno.core.dispatch(
-    testSync,
-    new Uint8Array([116, 101, 115, 116]),
-    new Uint8Array([49, 50, 51]),
-    new Uint8Array([99, 98, 97])
-  );
+// function runTestSync() {
+//   const response = Deno.core.dispatch(
+//     testSync,
+//     new Uint8Array([116, 101, 115, 116]),
+//     new Uint8Array([49, 50, 51]),
+//     new Uint8Array([99, 98, 97])
+//   );
 
-  console.log(`Plugin Sync Response: ${textDecoder.decode(response)}`);
-}
+//   console.log(`Plugin Sync Response: ${textDecoder.decode(response)}`);
+// }
 
-Deno.core.setAsyncHandler(testAsync, (response) => {
-  console.log(`Plugin Async Response: ${textDecoder.decode(response)}`);
-});
+// Deno.core.setAsyncHandler(testAsync, (response) => {
+//   console.log(`Plugin Async Response: ${textDecoder.decode(response)}`);
+// });
 
-function runTestAsync() {
-  const response = Deno.core.dispatch(
-    testAsync,
-    new Uint8Array([116, 101, 115, 116]),
-    new Uint8Array([49, 50, 51])
-  );
+// function runTestAsync() {
+//   const response = Deno.core.dispatch(
+//     testAsync,
+//     new Uint8Array([116, 101, 115, 116]),
+//     new Uint8Array([49, 50, 51])
+//   );
 
-  if (response != null || response != undefined) {
-    throw new Error("Expected null response!");
-  }
-}
+//   if (response != null || response != undefined) {
+//     throw new Error("Expected null response!");
+//   }
+// }
 
-function runTestOpCount() {
-  const start = Deno.metrics();
+// function runTestOpCount() {
+//   const start = Deno.metrics();
 
-  Deno.core.dispatch(testSync);
+//   Deno.core.dispatch(testSync);
 
-  const end = Deno.metrics();
+//   const end = Deno.metrics();
 
-  if (end.opsCompleted - start.opsCompleted !== 2) {
-    // one op for the plugin and one for Deno.metrics
-    throw new Error("The opsCompleted metric is not correct!");
-  }
-  if (end.opsDispatched - start.opsDispatched !== 2) {
-    // one op for the plugin and one for Deno.metrics
-    throw new Error("The opsDispatched metric is not correct!");
-  }
-}
+//   if (end.opsCompleted - start.opsCompleted !== 2) {
+//     // one op for the plugin and one for Deno.metrics
+//     throw new Error("The opsCompleted metric is not correct!");
+//   }
+//   if (end.opsDispatched - start.opsDispatched !== 2) {
+//     // one op for the plugin and one for Deno.metrics
+//     throw new Error("The opsDispatched metric is not correct!");
+//   }
+// }
 
-function runTestPluginClose() {
-  Deno.close(rid);
+// function runTestPluginClose() {
+//   Deno.close(rid);
 
-  const resourcesPost = Deno.resources();
+//   const resourcesPost = Deno.resources();
 
-  const preStr = JSON.stringify(resourcesPre, null, 2);
-  const postStr = JSON.stringify(resourcesPost, null, 2);
-  if (preStr !== postStr) {
-    throw new Error(
-      `Difference in open resources before openPlugin and after Plugin.close():
-Before: ${preStr}
-After: ${postStr}`
-    );
-  }
-}
+//   const preStr = JSON.stringify(resourcesPre, null, 2);
+//   const postStr = JSON.stringify(resourcesPost, null, 2);
+//   if (preStr !== postStr) {
+//     throw new Error(
+//       `Difference in open resources before openPlugin and after Plugin.close():
+// Before: ${preStr}
+// After: ${postStr}`
+//     );
+//   }
+// }
 
-runTestSync();
-runTestAsync();
+// runTestSync();
+// runTestAsync();
 
-runTestOpCount();
-runTestPluginClose();
+// runTestOpCount();
+// runTestPluginClose();

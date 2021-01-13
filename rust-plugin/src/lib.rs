@@ -16,15 +16,25 @@ fn op_to_grey_scale(
   _interface: &mut dyn Interface,
   zero_copy: &mut [ZeroCopyBuf],
 ) -> Op {
-  println!("RUST: op_to_grey_scale start.");
   let arg0 = &mut zero_copy[0];
-  let arr: &mut[u8] = arg0.as_mut();
-  for value in arr.iter_mut() {
-    *value = *value + 10;
+  let image_array: &mut[u8] = arg0.as_mut();
+
+  to_grey_scale(image_array);
+
+  Op::Sync(Box::new([]))
+}
+
+const PIXEL_SIZE: usize = 4;
+
+fn to_grey_scale(image_array: &mut[u8]) {
+  let image_array_length = image_array.len() - (image_array.len() % PIXEL_SIZE);
+
+  for i in (0..image_array_length).step_by(PIXEL_SIZE) {
+    let pixel_average = (((image_array[i] as u16) + (image_array[i + 1] as u16) + (image_array[i + 2] as u16)) / 3) as u8;
+    image_array[i] = pixel_average;
+    image_array[i + 1] = pixel_average;
+    image_array[i + 2] = pixel_average;
   }
-  println!("RUST: op_to_grey_scale end.");
-  let result_box: Box<[u8]> = Box::new([]);
-  Op::Sync(result_box)
 }
 
 fn op_test_sync(

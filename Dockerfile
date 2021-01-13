@@ -22,6 +22,7 @@ RUN apt-get update && \
 
 WORKDIR /deno
 COPY --from=rust /deno/rust-plugin/libtest_plugin.so ./rust-plugin/libtest_plugin.so
+COPY images/ images/
 COPY main.js main.js
 COPY Makefile Makefile
 

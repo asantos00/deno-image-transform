@@ -18,7 +18,7 @@ rust-build:
 # target: deno-run - Build rust plugin binary.
 .PHONY: deno-run
 deno-run:
-	deno run --unstable --allow-plugin main.js
+	deno run --unstable --allow-plugin --allow-read --allow-write main.js
 
 # target: docker-build - Build docker image.
 .PHONY: docker-build
@@ -28,7 +28,7 @@ docker-build:
 # target: docker-run - Build docker image.
 .PHONY: docker-run
 docker-run: docker-build
-	docker run ${DOCKER_IMAGE_TAG}
+	docker run -v $$(pwd)/images/:/deno/images/ ${DOCKER_IMAGE_TAG}
 
 # target: run - Build docker image.
 .PHONY: run

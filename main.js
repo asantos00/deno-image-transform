@@ -6,26 +6,34 @@
 // Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
 import { decode, encode } from "https://deno.land/x/jpegts@1.1/mod.ts";
 
-const filenameBase = "test_plugin";
+const rustLibNameOsMap = {
+  linux: {
+    prefix: "lib",
+    suffix: ".so",
+  },
+  darwin: {
+    prefix: "lib",
+    suffix: ".dylib",
+  },
+  windows: {
+    prefix: "",
+    suffix: ".dll",
+  },
+};
 
-let filenameSuffix = ".so";
-let filenamePrefix = "lib";
+function resolveRustLibFilename(libName) {
+  const nameInfo = rustLibNameOsMap[Deno.build.os];
 
-if (Deno.build.os === "windows") {
-  filenameSuffix = ".dll";
-  filenamePrefix = "";
+  if (!nameInfo) {
+    throw new Error("unexpected operating system");
+  }
+
+  return `${nameInfo.prefix}${libName}${nameInfo.suffix}`;
 }
-if (Deno.build.os === "darwin") {
-  filenameSuffix = ".dylib";
-}
 
-const filename = `./rust-plugin/${filenamePrefix}${filenameBase}${filenameSuffix}`;
-
-// This will be checked against open resources after Plugin.close()
-// in runTestClose() below.
-const resourcesPre = Deno.resources();
-
-const rid = Deno.openPlugin(filename);
+const rid = Deno.openPlugin(
+  `./rust-plugin/${resolveRustLibFilename("test_plugin")}`
+);
 
 const { helloWorld, testSync, testAsync, toGreyScale } = Deno.core.ops();
 if (!(testSync > 0)) {

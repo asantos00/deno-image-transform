@@ -7,9 +7,20 @@ use futures::future::FutureExt;
 
 #[no_mangle]
 pub fn deno_plugin_init(interface: &mut dyn Interface) {
+  interface.register_op("helloWorld", hello_world);
+
   interface.register_op("testSync", op_test_sync);
   interface.register_op("testAsync", op_test_async);
   interface.register_op("toGreyScale", op_to_grey_scale);
+}
+
+fn hello_world(
+  _interface: &mut dyn Interface,
+  _zero_copy: &mut [ZeroCopyBuf],
+) -> Op {
+  println!("Hello from rust.");
+
+  Op::Sync(Box::new([]))
 }
 
 fn op_to_grey_scale(

@@ -27,7 +27,7 @@ const resourcesPre = Deno.resources();
 
 const rid = Deno.openPlugin(filename);
 
-const { testSync, testAsync, toGreyScale } = Deno.core.ops();
+const { helloWorld, testSync, testAsync, toGreyScale } = Deno.core.ops();
 if (!(testSync > 0)) {
   throw "bad op id for testSync";
 }
@@ -37,6 +37,12 @@ if (!(testAsync > 0)) {
 if (!(toGreyScale > 0)) {
   throw "bad op id for toGreyScale";
 }
+
+function runHelloWorld() {
+  Deno.core.dispatch(helloWorld);
+}
+
+runHelloWorld();
 
 async function runToGreyScale(file) {
   let raw = await Deno.readFile(`images/${file}`);

@@ -6,29 +6,17 @@
 // Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
 import { decode, encode } from "https://deno.land/x/jpegts@1.1/mod.ts";
 
-const rustLibNameOsMap = {
-  linux: {
-    prefix: "lib",
-    suffix: ".so",
-  },
-  darwin: {
-    prefix: "lib",
-    suffix: ".dylib",
-  },
-  windows: {
-    prefix: "",
-    suffix: ".dll",
-  },
-};
-
 function resolveRustLibFilename(libName) {
-  const nameInfo = rustLibNameOsMap[Deno.build.os];
-
-  if (!nameInfo) {
-    throw new Error("unexpected operating system");
+  switch (Deno.build.os) {
+    case "linux":
+      return `lib${libName}.so`;
+    case "darwin":
+      return `lib${libName}.dylib`;
+    case "windows":
+      return `${libName}.dll`;
+    default:
+      throw new Error("unexpected operating system");
   }
-
-  return `${nameInfo.prefix}${libName}${nameInfo.suffix}`;
 }
 
 const rid = Deno.openPlugin(

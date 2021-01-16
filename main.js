@@ -23,7 +23,13 @@ const rid = Deno.openPlugin(
   `./rust-plugin/${resolveRustLibFilename("test_plugin")}`
 );
 
-const { helloWorld, testSync, testAsync, toGreyScale } = Deno.core.ops();
+const {
+  helloWorld,
+  testTextParamsAndReturn,
+  testSync,
+  testAsync,
+  toGreyScale,
+} = Deno.core.ops();
 if (!(testSync > 0)) {
   throw "bad op id for testSync";
 }
@@ -38,7 +44,31 @@ function runHelloWorld() {
   Deno.core.dispatch(helloWorld);
 }
 
+console.log("---------- hello world:");
 runHelloWorld();
+console.log("");
+
+function runTestTextParamsAndReturn() {
+  const textEncoder = new TextEncoder();
+  const param0 = textEncoder.encode("text");
+  const param1 = textEncoder.encode("sent from");
+  const param2 = textEncoder.encode("deno");
+
+  const response = Deno.core.dispatch(
+    testTextParamsAndReturn,
+    param0,
+    param1,
+    param2
+  );
+
+  const textDecoder = new TextDecoder();
+  const result = textDecoder.decode(response);
+  console.log(`result: ${result}`);
+}
+
+console.log("---------- text params and return:");
+runTestTextParamsAndReturn();
+console.log("");
 
 async function runToGreyScale(file) {
   let raw = await Deno.readFile(`images/${file}`);

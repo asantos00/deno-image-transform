@@ -8,6 +8,7 @@ use futures::future::FutureExt;
 #[no_mangle]
 pub fn deno_plugin_init(interface: &mut dyn Interface) {
   interface.register_op("helloWorld", hello_world);
+  interface.register_op("testTextParamsAndReturn", op_test_text_params_and_return);
 
   interface.register_op("testSync", op_test_sync);
   interface.register_op("testAsync", op_test_async);
@@ -21,6 +22,21 @@ fn hello_world(
   println!("Hello from rust.");
 
   Op::Sync(Box::new([]))
+}
+
+fn op_test_text_params_and_return(
+  _interface: &mut dyn Interface,
+  zero_copy: &mut [ZeroCopyBuf],
+) -> Op {
+  // let zero_copy = zero_copy.to_vec();
+  for (idx, buf) in zero_copy.iter().enumerate() {
+    let param_str = std::str::from_utf8(&buf[..]).unwrap();
+
+    println!("param[{}]: {}", idx, param_str);
+  }
+
+  let result = b"result from rust";
+  Op::Sync(Box::new(*result))
 }
 
 fn op_to_grey_scale(

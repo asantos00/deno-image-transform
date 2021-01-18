@@ -26,6 +26,7 @@ const rid = Deno.openPlugin(
 const {
   helloWorld,
   testTextParamsAndReturn,
+  testJsonParamsAndReturn,
   testSync,
   testAsync,
   toGreyScale,
@@ -68,6 +69,29 @@ function runTestTextParamsAndReturn() {
 
 console.log("---------- text params and return:");
 runTestTextParamsAndReturn();
+console.log("");
+
+
+function runTestJsonParamsAndReturn() {
+  const textEncoder = new TextEncoder();
+  const param0 = textEncoder.encode(
+    JSON.stringify({
+      hello: {
+        nested: "world",
+      },
+    })
+  );
+
+  const response = Deno.core.dispatch(testJsonParamsAndReturn, param0);
+
+  const textDecoder = new TextDecoder();
+  const result = textDecoder.decode(response);
+  const jsonResult = JSON.parse(result);
+  console.log(`json result: ${jsonResult}`);
+}
+
+console.log("---------- json params and return:");
+runTestJsonParamsAndReturn();
 console.log("");
 
 async function runToGreyScale(file) {

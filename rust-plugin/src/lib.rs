@@ -3,12 +3,15 @@
 use deno_core::plugin_api::Interface;
 use deno_core::plugin_api::Op;
 use deno_core::plugin_api::ZeroCopyBuf;
+use deno_core::serde_json;
+
 use futures::future::FutureExt;
 
 #[no_mangle]
 pub fn deno_plugin_init(interface: &mut dyn Interface) {
   interface.register_op("helloWorld", hello_world);
   interface.register_op("testTextParamsAndReturn", op_test_text_params_and_return);
+  interface.register_op("testJsonParamsAndReturn", op_test_json_params_and_return);
 
   interface.register_op("testSync", op_test_sync);
   interface.register_op("testAsync", op_test_async);
@@ -28,7 +31,6 @@ fn op_test_text_params_and_return(
   _interface: &mut dyn Interface,
   zero_copy: &mut [ZeroCopyBuf],
 ) -> Op {
-  // let zero_copy = zero_copy.to_vec();
   for (idx, buf) in zero_copy.iter().enumerate() {
     let param_str = std::str::from_utf8(&buf[..]).unwrap();
 
@@ -37,6 +39,21 @@ fn op_test_text_params_and_return(
 
   let result = b"result from rust";
   Op::Sync(Box::new(*result))
+}
+
+fn op_test_json_params_and_return(
+  _interface: &mut dyn Interface,
+  zero_copy: &mut [ZeroCopyBuf],
+) -> Op {
+  let arg0 = &mut zero_copy[0];
+  let json: serde_json::Value = serde_json::from_slice(arg0).unwrap();
+
+  println!("json param: {}", json);
+
+  let result = serde_json::json!({
+    "someValue": 1
+  });
+  Op::Sync(serde_json::to_vec(&result).unwrap().into_boxed_slice())
 }
 
 fn op_to_grey_scale(

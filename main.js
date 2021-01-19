@@ -64,7 +64,7 @@ function runTestTextParamsAndReturn() {
 
   const textDecoder = new TextDecoder();
   const result = textDecoder.decode(response);
-  console.log(`result: ${result}`);
+  console.log(`Deno: result: ${result}`);
 }
 
 console.log("---------- text params and return:");
@@ -74,20 +74,22 @@ console.log("");
 
 function runTestJsonParamsAndReturn() {
   const textEncoder = new TextEncoder();
-  const param0 = textEncoder.encode(
-    JSON.stringify({
-      hello: {
-        nested: "world",
-      },
-    })
-  );
+  const image = {
+    hasAlphaChannel: true,
+    size: {
+      width: 100,
+      height: 50,
+    },
+  };
+  const param0 = textEncoder.encode(JSON.stringify(image));
 
   const response = Deno.core.dispatch(testJsonParamsAndReturn, param0);
 
   const textDecoder = new TextDecoder();
   const result = textDecoder.decode(response);
   const jsonResult = JSON.parse(result);
-  console.log(`json result: ${jsonResult}`);
+  console.log(`Deno: jsonResult: ${JSON.stringify(jsonResult)}`);
+  console.log(`Deno: jsonResult.success: ${jsonResult.success}`);
 }
 
 console.log("---------- json params and return:");

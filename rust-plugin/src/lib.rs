@@ -22,7 +22,7 @@ fn hello_world(
   _interface: &mut dyn Interface,
   _zero_copy: &mut [ZeroCopyBuf],
 ) -> Op {
-  println!("Hello from rust.");
+  println!("Rust: Hello from rust.");
 
   Op::Sync(Box::new([]))
 }
@@ -34,7 +34,7 @@ fn op_test_text_params_and_return(
   for (idx, buf) in zero_copy.iter().enumerate() {
     let param_str = std::str::from_utf8(&buf[..]).unwrap();
 
-    println!("param[{}]: {}", idx, param_str);
+    println!("Rust: param[{}]: {}", idx, param_str);
   }
 
   let result = b"result from rust";
@@ -47,11 +47,26 @@ fn op_test_json_params_and_return(
 ) -> Op {
   let arg0 = &mut zero_copy[0];
   let json: serde_json::Value = serde_json::from_slice(arg0).unwrap();
+  let has_alpha_channel: bool = match &json[("hasAlphaChannel")] {
+    serde_json::Value::Bool(b) => *b,
+    _ => true,
+  };
+  let width = match &json["size"]["width"] {
+    serde_json::Value::Number(n) => n.as_u64().unwrap_or(0),
+    _ => 0,
+  };
+  let height = match &json["size"]["height"] {
+    serde_json::Value::Number(n) => n.as_u64().unwrap_or(0),
+    _ => 0,
+  };
 
-  println!("json param: {}", json);
+  println!("Rust: json param: {}", json);
+  println!("Rust: has_alpha_channel: {}", has_alpha_channel);
+  println!("Rust: width: {}", width);
+  println!("Rust: height: {}", height);
 
   let result = serde_json::json!({
-    "someValue": 1
+    "success": true
   });
   Op::Sync(serde_json::to_vec(&result).unwrap().into_boxed_slice())
 }

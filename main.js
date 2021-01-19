@@ -100,8 +100,18 @@ async function runToGreyScale(file) {
   let raw = await Deno.readFile(`images/${file}`);
 
   const image = decode(raw);
+  const textEncoder = new TextEncoder();
+  const imageDescriptor = {
+    hasAlphaChannel: true,
+    size: {
+      width: image.width,
+      height: image.height,
+    },
+  };
+  const param0 = textEncoder.encode(JSON.stringify(imageDescriptor));
+  const param1 = image.data;
 
-  Deno.core.dispatch(toGreyScale, image.data);
+  Deno.core.dispatch(toGreyScale, param0, param1);
 
   raw = encode(image, 100);
 
@@ -110,8 +120,10 @@ async function runToGreyScale(file) {
   console.log(`images/${file} > greyScale > "images/output/${file}"`);
 }
 
+console.log("---------- toGreyScale:");
 await runToGreyScale("dice.jpg");
 await runToGreyScale("dino.jpg");
+console.log("");
 
 // const textDecoder = new TextDecoder();
 

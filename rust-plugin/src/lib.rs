@@ -12,10 +12,10 @@ pub fn deno_plugin_init(interface: &mut dyn Interface) {
   interface.register_op("helloWorld", hello_world);
   interface.register_op("testTextParamsAndReturn", op_test_text_params_and_return);
   interface.register_op("testJsonParamsAndReturn", op_test_json_params_and_return);
+  interface.register_op("toGreyScale", op_to_grey_scale);
 
   interface.register_op("testSync", op_test_sync);
   interface.register_op("testAsync", op_test_async);
-  interface.register_op("toGreyScale", op_to_grey_scale);
 }
 
 fn hello_world(
@@ -76,19 +76,27 @@ fn op_to_grey_scale(
   zero_copy: &mut [ZeroCopyBuf],
 ) -> Op {
   let arg0 = &mut zero_copy[0];
-  let image_array: &mut[u8] = arg0.as_mut();
+  let json: serde_json::Value = serde_json::from_slice(arg0).unwrap();
+  let has_alpha_channel: bool = match &json[("hasAlphaChannel")] {
+    serde_json::Value::Bool(b) => *b,
+    _ => true,
+  };
+  let pixel_size = if has_alpha_channel { RGBA_PIXEL_SIZE } else { RGB_PIXEL_SIZE };
+  let arg1 = &mut zero_copy[1];
+  let image_array: &mut[u8] = arg1.as_mut();
 
-  to_grey_scale(image_array);
+  to_grey_scale(image_array, pixel_size);
 
   Op::Sync(Box::new([]))
 }
 
-const PIXEL_SIZE: usize = 4;
+const RGB_PIXEL_SIZE: usize = 3;
+const RGBA_PIXEL_SIZE: usize = 4;
 
-fn to_grey_scale(image_array: &mut[u8]) {
-  let image_array_length = image_array.len() - (image_array.len() % PIXEL_SIZE);
+fn to_grey_scale(image_array: &mut[u8], pixel_size: usize) {
+  let image_array_length = image_array.len() - (image_array.len() % pixel_size);
 
-  for i in (0..image_array_length).step_by(PIXEL_SIZE) {
+  for i in (0..image_array_length).step_by(pixel_size) {
     let pixel_average = (((image_array[i] as u16) + (image_array[i + 1] as u16) + (image_array[i + 2] as u16)) / 3) as u8;
     image_array[i] = pixel_average;
     image_array[i + 1] = pixel_average;

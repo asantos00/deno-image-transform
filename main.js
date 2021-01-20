@@ -30,6 +30,7 @@ const {
   testSync,
   testAsync,
   toGreyScale,
+  toGreyScaleAsync,
 } = Deno.core.ops();
 if (!(testSync > 0)) {
   throw "bad op id for testSync";
@@ -97,7 +98,9 @@ runTestJsonParamsAndReturn();
 console.log("");
 
 async function runToGreyScale(file) {
-  let raw = await Deno.readFile(`images/${file}`);
+  // let raw = await Deno.readFile(`images/${file}`);
+  // Use the sync version of readFile to help highlight the `Deno.core.dispatch` not returning until the sync rust op is finished, effectively stoping deno's world.
+  let raw = Deno.readFileSync(`images/${file}`);
 
   const image = decode(raw);
   const textEncoder = new TextEncoder();
@@ -117,12 +120,35 @@ async function runToGreyScale(file) {
 
   await Deno.writeFile(`images/output/${file}`, raw.data);
 
-  console.log(`images/${file} > greyScale > "images/output/${file}"`);
+  console.log(
+    `Deno: runToGreyScale(\"images/${file}\") > "images/output/${file}"`
+  );
 }
 
 console.log("---------- toGreyScale:");
 await runToGreyScale("dice.jpg");
 await runToGreyScale("dino.jpg");
+console.log("");
+
+const sleep = (milliseconds) => {
+  return new Promise((resolve) => setTimeout(resolve, milliseconds));
+};
+
+console.log("---------- toGreyScale hangs deno?:");
+let toGreyScalePromise = runToGreyScale("dice.jpg").then((r) => {
+  console.log("Deno: runToGreyScale just finished");
+  return r;
+});
+console.log(
+  "Deno: runToGreyScale started, will try to do other stuff meanwhile"
+);
+for (let i = 0; i < 5; ++i) {
+  await sleep(200);
+  console.log(
+    "Deno: pretending to do something in parallel of runToGreyScale?"
+  );
+}
+await toGreyScalePromise;
 console.log("");
 
 // const textDecoder = new TextDecoder();

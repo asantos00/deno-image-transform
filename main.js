@@ -19,18 +19,16 @@ function resolveRustLibFilename(libName) {
   }
 }
 
-const rid = Deno.openPlugin(
-  `./rust-plugin/${resolveRustLibFilename("test_plugin")}`
-);
+const rustLibFilename = resolveRustLibFilename("test_plugin");
+const rustPluginId = Deno.openPlugin(`./rust-plugin/${rustLibFilename}`);
 
 const {
   helloWorld,
   testTextParamsAndReturn,
   testJsonParamsAndReturn,
+  toGreyScale,
   testSync,
   testAsync,
-  toGreyScale,
-  toGreyScaleAsync,
 } = Deno.core.ops();
 if (!(testSync > 0)) {
   throw "bad op id for testSync";
@@ -42,13 +40,15 @@ if (!(toGreyScale > 0)) {
   throw "bad op id for toGreyScale";
 }
 
+console.log("---------- hello world:");
+
 function runHelloWorld() {
   Deno.core.dispatch(helloWorld);
 }
 
-console.log("---------- hello world:");
 runHelloWorld();
-console.log("");
+
+console.log("\n---------- text params and return:");
 
 function runTestTextParamsAndReturn() {
   const textEncoder = new TextEncoder();
@@ -68,10 +68,9 @@ function runTestTextParamsAndReturn() {
   console.log(`Deno: result: ${result}`);
 }
 
-console.log("---------- text params and return:");
 runTestTextParamsAndReturn();
-console.log("");
 
+console.log("\n---------- json params and return:");
 
 function runTestJsonParamsAndReturn() {
   const textEncoder = new TextEncoder();
@@ -88,20 +87,19 @@ function runTestJsonParamsAndReturn() {
 
   const textDecoder = new TextDecoder();
   const result = textDecoder.decode(response);
+  console.log(`Deno: result: ${result}`);
   const jsonResult = JSON.parse(result);
-  console.log(`Deno: jsonResult: ${JSON.stringify(jsonResult)}`);
   console.log(`Deno: jsonResult.success: ${jsonResult.success}`);
 }
 
-console.log("---------- json params and return:");
 runTestJsonParamsAndReturn();
-console.log("");
 
-async function runToGreyScale(file) {
+console.log("\n---------- toGreyScale:");
+
+async function runToGreyScale(inputFilename, outputFilename) {
   // let raw = await Deno.readFile(`images/${file}`);
   // Use the sync version of readFile to help highlight the `Deno.core.dispatch` not returning until the sync rust op is finished, effectively stoping deno's world.
-  let raw = Deno.readFileSync(`images/${file}`);
-
+  let raw = Deno.readFileSync(`images/${inputFilename}`);
   const image = decode(raw);
   const textEncoder = new TextEncoder();
   const imageDescriptor = {
@@ -118,38 +116,40 @@ async function runToGreyScale(file) {
 
   raw = encode(image, 100);
 
-  await Deno.writeFile(`images/output/${file}`, raw.data);
+  await Deno.writeFile(`images/output/${outputFilename}`, raw.data);
 
   console.log(
-    `Deno: runToGreyScale(\"images/${file}\") > "images/output/${file}"`
+    `Deno: runToGreyScale(\"images/${inputFilename}\") > "images/output/${outputFilename}"`
   );
 }
 
-console.log("---------- toGreyScale:");
-await runToGreyScale("dice.jpg");
-await runToGreyScale("dino.jpg");
-console.log("");
+await runToGreyScale("dice.jpg", "dice.jpg");
+await runToGreyScale("dino.jpg", "dino.jpg");
+
+console.log("\n---------- toGreyScale hangs deno?:");
 
 const sleep = (milliseconds) => {
   return new Promise((resolve) => setTimeout(resolve, milliseconds));
 };
 
-console.log("---------- toGreyScale hangs deno?:");
-let toGreyScalePromise = runToGreyScale("dice.jpg").then((r) => {
-  console.log("Deno: runToGreyScale just finished");
-  return r;
-});
-console.log(
-  "Deno: runToGreyScale started, will try to do other stuff meanwhile"
-);
-for (let i = 0; i < 5; ++i) {
-  await sleep(200);
+async function runToGreyScaleHangTest() {
+  const toGreyScalePromise = runToGreyScale("dice.jpg", "hang-dice.jpg");
+
   console.log(
-    "Deno: pretending to do something in parallel of runToGreyScale?"
+    "Deno: runToGreyScale() started, will try to do other stuff meanwhile"
   );
+
+  for (let i = 0; i < 5; ++i) {
+    console.log(
+      "Deno: sleeping for 200 ms (pretending to do something in parallel of runToGreyScale())"
+    );
+    await sleep(200);
+  }
+
+  await toGreyScalePromise;
 }
-await toGreyScalePromise;
-console.log("");
+
+await runToGreyScaleHangTest();
 
 // const textDecoder = new TextDecoder();
 

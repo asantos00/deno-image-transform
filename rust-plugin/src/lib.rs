@@ -45,7 +45,7 @@ fn op_test_json_params_and_return(
   _interface: &mut dyn Interface,
   zero_copy: &mut [ZeroCopyBuf],
 ) -> Op {
-  let arg0 = &mut zero_copy[0];
+  let arg0 = &zero_copy[0];
   let json: serde_json::Value = serde_json::from_slice(arg0).unwrap();
   let has_alpha_channel: bool = match &json[("hasAlphaChannel")] {
     serde_json::Value::Bool(b) => *b,
@@ -75,7 +75,7 @@ fn op_to_grey_scale(
   _interface: &mut dyn Interface,
   zero_copy: &mut [ZeroCopyBuf],
 ) -> Op {
-  let arg0 = &mut zero_copy[0];
+  let arg0 = &zero_copy[0];
   let json: serde_json::Value = serde_json::from_slice(arg0).unwrap();
   let has_alpha_channel: bool = match &json[("hasAlphaChannel")] {
     serde_json::Value::Bool(b) => *b,
@@ -85,7 +85,12 @@ fn op_to_grey_scale(
   let arg1 = &mut zero_copy[1];
   let image_array: &mut[u8] = arg1.as_mut();
 
+  println!("Rust: sleeping for 2000 ms (simulating a >2000 ms execution time)");
+  std::thread::sleep(std::time::Duration::from_secs(2));
+
   to_grey_scale(image_array, pixel_size);
+
+  println!("Rust: to_grey_scale() finished");
 
   Op::Sync(Box::new([]))
 }

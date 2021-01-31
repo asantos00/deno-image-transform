@@ -243,70 +243,26 @@ await Promise.all([
   runToGreyScaleAsync("dino.jpg", "async-dino.jpg"),
 ]);
 
-// const textDecoder = new TextDecoder();
+console.log("\n---------- toGreyScaleAsync hangs deno?:");
 
-// function runTestSync() {
-//   const response = Deno.core.dispatch(
-//     testSync,
-//     new Uint8Array([116, 101, 115, 116]),
-//     new Uint8Array([49, 50, 51]),
-//     new Uint8Array([99, 98, 97])
-//   );
+async function runToGreyScaleAsyncHangTest() {
+  const toGreyScalePromise = runToGreyScaleAsync(
+    "dice.jpg",
+    "async-hang-dice.jpg"
+  );
 
-//   console.log(`Plugin Sync Response: ${textDecoder.decode(response)}`);
-// }
+  console.log(
+    "Deno: runToGreyScaleAsync() started, will try to do other stuff meanwhile"
+  );
 
-// Deno.core.setAsyncHandler(testAsync, (response) => {
-//   console.log(`Plugin Async Response: ${textDecoder.decode(response)}`);
-// });
+  for (let i = 0; i < 5; ++i) {
+    console.log(
+      "Deno: sleeping for 200 ms (pretending to do something in parallel of runToGreyScaleAsync())"
+    );
+    await sleep(200);
+  }
 
-// function runTestAsync() {
-//   const response = Deno.core.dispatch(
-//     testAsync,
-//     new Uint8Array([116, 101, 115, 116]),
-//     new Uint8Array([49, 50, 51])
-//   );
+  await toGreyScalePromise;
+}
 
-//   if (response != null || response != undefined) {
-//     throw new Error("Expected null response!");
-//   }
-// }
-
-// function runTestOpCount() {
-//   const start = Deno.metrics();
-
-//   Deno.core.dispatch(testSync);
-
-//   const end = Deno.metrics();
-
-//   if (end.opsCompleted - start.opsCompleted !== 2) {
-//     // one op for the plugin and one for Deno.metrics
-//     throw new Error("The opsCompleted metric is not correct!");
-//   }
-//   if (end.opsDispatched - start.opsDispatched !== 2) {
-//     // one op for the plugin and one for Deno.metrics
-//     throw new Error("The opsDispatched metric is not correct!");
-//   }
-// }
-
-// function runTestPluginClose() {
-//   Deno.close(rid);
-
-//   const resourcesPost = Deno.resources();
-
-//   const preStr = JSON.stringify(resourcesPre, null, 2);
-//   const postStr = JSON.stringify(resourcesPost, null, 2);
-//   if (preStr !== postStr) {
-//     throw new Error(
-//       `Difference in open resources before openPlugin and after Plugin.close():
-// Before: ${preStr}
-// After: ${postStr}`
-//     );
-//   }
-// }
-
-// runTestSync();
-// runTestAsync();
-
-// runTestOpCount();
-// runTestPluginClose();
+await runToGreyScaleAsyncHangTest();

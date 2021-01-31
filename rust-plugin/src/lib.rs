@@ -13,6 +13,7 @@ pub fn deno_plugin_init(interface: &mut dyn Interface) {
   interface.register_op("testTextParamsAndReturn", op_test_text_params_and_return);
   interface.register_op("testJsonParamsAndReturn", op_test_json_params_and_return);
   interface.register_op("toGreyScale", op_to_grey_scale);
+  interface.register_op("toGreyScaleAsync", op_to_grey_scale_async);
 
   interface.register_op("testSync", op_test_sync);
   interface.register_op("testAsync", op_test_async);
@@ -107,6 +108,40 @@ fn to_grey_scale(image_array: &mut[u8], pixel_size: usize) {
     image_array[i + 1] = pixel_average;
     image_array[i + 2] = pixel_average;
   }
+}
+
+fn op_to_grey_scale_async(
+  _interface: &mut dyn Interface,
+  zero_copy: &mut [ZeroCopyBuf],
+) -> Op {
+  let arg0 = &zero_copy[0];
+  let json: serde_json::Value = serde_json::from_slice(arg0).unwrap();
+  let has_alpha_channel: bool = match &json[("hasAlphaChannel")] {
+    serde_json::Value::Bool(b) => *b,
+    _ => true,
+  };
+  let pixel_size = if has_alpha_channel { RGBA_PIXEL_SIZE } else { RGB_PIXEL_SIZE };
+  let arg1 = &mut zero_copy[1];
+  let mut arg1 = arg1.clone();
+
+  let fut = async move {
+    let image_array: &mut[u8] = arg1.as_mut();
+    // Simulate a >2 seconds execution time
+    std::thread::sleep(std::time::Duration::from_secs(2));
+
+    to_grey_scale(image_array, pixel_size);
+
+    // let (tx, rx) = futures::channel::oneshot::channel::<Result<(), ()>>();
+    // std::thread::spawn(move || {
+    //   std::thread::sleep(std::time::Duration::from_secs(1));
+    //   tx.send(Ok(())).unwrap();
+    // });
+    // assert!(rx.await.is_ok());
+
+    Box::new([]) as Box<[u8]>
+  };
+
+  Op::Async(fut.boxed())
 }
 
 fn op_test_sync(

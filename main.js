@@ -29,6 +29,7 @@ const {
   toGreyScale,
   testSync,
   testAsync,
+  toGreyScaleAsync,
 } = Deno.core.ops();
 if (!(testSync > 0)) {
   throw "bad op id for testSync";
@@ -150,6 +151,83 @@ async function runToGreyScaleHangTest() {
 }
 
 await runToGreyScaleHangTest();
+
+console.log("\n---------- toGreyScaleAsync:");
+
+let lastCallId = -1;
+
+function generateNewCallId() {
+  return ++lastCallId;
+}
+
+const rustPendingOps = {};
+
+async function waitForRustOp(rustPluginId, callId) {
+  const key = `${rustPluginId}-${callId}`;
+  let value = rustPendingOps[key];
+
+  if (!value) {
+    rustPendingOps[key] = value = {};
+    value.promise = new Promise((resolve, reject) => {
+      value.resolve = resolve;
+      value.reject = reject;
+    });
+  }
+
+  return value.promise;
+}
+
+Deno.core.setAsyncHandler(rustPluginId, (msg) => {
+  try {
+    const textDecoder = new TextDecoder();
+    const result = textDecoder.decode(msg);
+    const jsonResult = JSON.parse(result);
+    const callId = jsonResult.callId;
+    const key = `${rustPluginId}-${callId}`;
+    const value = rustPendingOps[key];
+
+    if (!value) {
+      throw new Error(`unknown event, id: '${callId}'`);
+    }
+
+    value.resolve(jsonResult);
+  } catch (ex) {
+    console.warn("Deno.core.setAsyncHandler(): handler warning:", ex);
+  }
+});
+
+async function runToGreyScaleAsync(inputFilename, outputFilename) {
+  // let raw = await Deno.readFile(`images/${file}`);
+  // Use the sync version of readFile to help highlight the `Deno.core.dispatch` not returning until the sync rust op is finished, effectively stoping deno's world.
+  let raw = Deno.readFileSync(`images/${inputFilename}`);
+  const image = decode(raw);
+  const textEncoder = new TextEncoder();
+  const imageDescriptor = {
+    callId: generateNewCallId(),
+    hasAlphaChannel: true,
+    size: {
+      width: image.width,
+      height: image.height,
+    },
+  };
+  const param0 = textEncoder.encode(JSON.stringify(imageDescriptor));
+  const param1 = image.data;
+
+  Deno.core.dispatch(toGreyScaleAsync, param0, param1);
+
+  await waitForRustOp(rustPluginId, imageDescriptor.callId);
+
+  raw = encode(image, 100);
+
+  await Deno.writeFile(`images/output/${outputFilename}`, raw.data);
+
+  console.log(
+    `Deno: runToGreyScale(\"images/${inputFilename}\") > "images/output/${outputFilename}"`
+  );
+}
+
+await runToGreyScaleAsync("dice.jpg");
+await runToGreyScaleAsync("dino.jpg");
 
 // const textDecoder = new TextDecoder();
 

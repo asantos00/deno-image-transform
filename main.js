@@ -154,7 +154,7 @@ await runToGreyScaleHangTest();
 
 console.log("\n---------- toGreyScaleAsync:");
 
-let lastCallId = -1;
+let lastCallId = 0;
 
 function generateNewCallId() {
   return ++lastCallId;
@@ -162,39 +162,51 @@ function generateNewCallId() {
 
 const rustPendingOps = {};
 
-async function waitForRustOp(rustPluginId, callId) {
-  const key = `${rustPluginId}-${callId}`;
-  let value = rustPendingOps[key];
+async function waitForRustOp(opId, callId) {
+  let opPendingCalls = rustPendingOps[opId];
 
-  if (!value) {
-    rustPendingOps[key] = value = {};
-    value.promise = new Promise((resolve, reject) => {
-      value.resolve = resolve;
-      value.reject = reject;
+  if (!opPendingCalls) {
+    registerOpAsyncHandler(opId);
+    rustPendingOps[opId] = opPendingCalls = {};
+  }
+
+  let call = opPendingCalls[callId];
+
+  if (!call) {
+    opPendingCalls[callId] = call = {};
+    call.promise = new Promise((resolve, reject) => {
+      call.resolve = resolve;
+      call.reject = reject;
     });
   }
 
-  return value.promise;
+  return call.promise;
 }
 
-Deno.core.setAsyncHandler(rustPluginId, (msg) => {
-  try {
-    const textDecoder = new TextDecoder();
-    const result = textDecoder.decode(msg);
-    const jsonResult = JSON.parse(result);
-    const callId = jsonResult.callId;
-    const key = `${rustPluginId}-${callId}`;
-    const value = rustPendingOps[key];
+function registerOpAsyncHandler(opId) {
+  Deno.core.setAsyncHandler(opId, (msg) => {
+    try {
+      const textDecoder = new TextDecoder();
+      const result = textDecoder.decode(msg);
+      const jsonResult = JSON.parse(result);
+      const callId = jsonResult.callId;
 
-    if (!value) {
-      throw new Error(`unknown event, id: '${callId}'`);
+      if (callId == undefined || callId == null) {
+        throw new Error(`unable to read callId`);
+      }
+
+      const call = rustPendingOps[opId][callId];
+
+      if (!call) {
+        throw new Error(`unknown event, id: '${callId}'`);
+      }
+
+      call.resolve(jsonResult);
+    } catch (ex) {
+      console.warn("Deno.core.setAsyncHandler(): handler warning:", ex);
     }
-
-    value.resolve(jsonResult);
-  } catch (ex) {
-    console.warn("Deno.core.setAsyncHandler(): handler warning:", ex);
-  }
-});
+  });
+}
 
 async function runToGreyScaleAsync(inputFilename, outputFilename) {
   // let raw = await Deno.readFile(`images/${file}`);
@@ -215,7 +227,7 @@ async function runToGreyScaleAsync(inputFilename, outputFilename) {
 
   Deno.core.dispatch(toGreyScaleAsync, param0, param1);
 
-  await waitForRustOp(rustPluginId, imageDescriptor.callId);
+  await waitForRustOp(toGreyScaleAsync, imageDescriptor.callId);
 
   raw = encode(image, 100);
 
@@ -226,8 +238,10 @@ async function runToGreyScaleAsync(inputFilename, outputFilename) {
   );
 }
 
-await runToGreyScaleAsync("dice.jpg");
-await runToGreyScaleAsync("dino.jpg");
+await Promise.all([
+  runToGreyScaleAsync("dice.jpg", "async-dice.jpg"),
+  runToGreyScaleAsync("dino.jpg", "async-dino.jpg"),
+]);
 
 // const textDecoder = new TextDecoder();
 

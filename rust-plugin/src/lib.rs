@@ -116,6 +116,10 @@ fn op_to_grey_scale_async(
 ) -> Op {
   let arg0 = &zero_copy[0];
   let json: serde_json::Value = serde_json::from_slice(arg0).unwrap();
+  let call_id = match &json[("callId")] {
+    serde_json::Value::Number(n) => n.as_u64().unwrap_or(0),
+    _ => 0,
+  };
   let has_alpha_channel: bool = match &json[("hasAlphaChannel")] {
     serde_json::Value::Bool(b) => *b,
     _ => true,
@@ -126,7 +130,8 @@ fn op_to_grey_scale_async(
 
   let fut = async move {
     let image_array: &mut[u8] = arg1.as_mut();
-    // Simulate a >2 seconds execution time
+
+    println!("Rust: sleeping for 2000 ms (simulating a >2000 ms execution time)");
     std::thread::sleep(std::time::Duration::from_secs(2));
 
     to_grey_scale(image_array, pixel_size);
@@ -138,7 +143,10 @@ fn op_to_grey_scale_async(
     // });
     // assert!(rx.await.is_ok());
 
-    Box::new([]) as Box<[u8]>
+    let result = serde_json::json!({
+      "callId": call_id
+    });
+    serde_json::to_vec(&result).unwrap().into_boxed_slice()
   };
 
   Op::Async(fut.boxed())

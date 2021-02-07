@@ -27,17 +27,21 @@ const {
   testTextParamsAndReturn,
   testJsonParamsAndReturn,
   toGreyScale,
-  testSync,
-  testAsync,
   toGreyScaleAsync,
 } = Deno.core.ops();
-if (!(testSync > 0)) {
+if (!(helloWorld > 0)) {
   throw "bad op id for testSync";
 }
-if (!(testAsync > 0)) {
+if (!(testTextParamsAndReturn > 0)) {
   throw "bad op id for testAsync";
 }
+if (!(testJsonParamsAndReturn > 0)) {
+  throw "bad op id for toGreyScale";
+}
 if (!(toGreyScale > 0)) {
+  throw "bad op id for toGreyScale";
+}
+if (!(toGreyScaleAsync > 0)) {
   throw "bad op id for toGreyScale";
 }
 

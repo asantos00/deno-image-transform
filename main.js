@@ -128,8 +128,8 @@ async function runToGreyScale(inputFilename, outputFilename) {
   );
 }
 
-await runToGreyScale("dice.jpg", "dice.jpg");
-await runToGreyScale("dino.jpg", "dino.jpg");
+// await runToGreyScale("dice.jpg", "dice.jpg");
+// await runToGreyScale("dino.jpg", "dino.jpg");
 
 console.log("\n---------- toGreyScale hangs deno?:");
 
@@ -154,7 +154,7 @@ async function runToGreyScaleHangTest() {
   await toGreyScalePromise;
 }
 
-await runToGreyScaleHangTest();
+// await runToGreyScaleHangTest();
 
 console.log("\n---------- toGreyScaleAsync:");
 
@@ -242,10 +242,10 @@ async function runToGreyScaleAsync(inputFilename, outputFilename) {
   );
 }
 
-await Promise.all([
-  runToGreyScaleAsync("dice.jpg", "async-dice.jpg"),
-  runToGreyScaleAsync("dino.jpg", "async-dino.jpg"),
-]);
+// await Promise.all([
+//   runToGreyScaleAsync("dice.jpg", "async-dice.jpg"),
+//   runToGreyScaleAsync("dino.jpg", "async-dino.jpg"),
+// ]);
 
 console.log("\n---------- toGreyScaleAsync hangs deno?:");
 

@@ -125,27 +125,21 @@ fn op_to_grey_scale_async(
   let arg1 = &mut zero_copy[1];
   let mut arg1 = arg1.clone();
 
-  let fut = async move {
-    let (tx, rx) = futures::channel::oneshot::channel::<Result<(), ()>>();
-    std::thread::spawn(move || {
-      let image_array: &mut[u8] = arg1.as_mut();
+  let fut = tokio::task::spawn_blocking(move || {
+    let image_array: &mut[u8] = arg1.as_mut();
 
-      println!("Rust: sleeping for 2000 ms (simulating a >2000 ms execution time)");
-      std::thread::sleep(std::time::Duration::from_secs(10));
+    println!("Rust: sleeping for 2000 ms (simulating a >2000 ms execution time)");
+    std::thread::sleep(std::time::Duration::from_secs(10));
 
-      to_grey_scale(image_array, pixel_size);
+    to_grey_scale(image_array, pixel_size);
 
-      println!("Rust: op_to_grey_scale_async() finished");
-
-      tx.send(Ok(())).unwrap();
-    });
-    assert!(rx.await.is_ok());
+    println!("Rust: op_to_grey_scale_async() finished");
 
     let result = serde_json::json!({
       "callId": call_id
     });
     serde_json::to_vec(&result).unwrap().into_boxed_slice()
-  };
+  }).map(|r| r.unwrap());
 
   Op::Async(fut.boxed())
 }

@@ -1,9 +1,7 @@
-# Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
-
 [package]
 name = "test_plugin"
 version = "0.0.1"
-authors = ["the deno authors"]
+authors = [""]
 edition = "2018"
 publish = false
 
@@ -13,4 +11,3 @@ crate-type = ["cdylib"]
 [dependencies]
 futures = "0.3.8"
 deno_core = "0.75.0"
-tokio = { version = "1.1.1", features = ["rt"] }

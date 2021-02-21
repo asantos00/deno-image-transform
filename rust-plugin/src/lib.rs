@@ -1,5 +1,3 @@
-// Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
-
 use deno_core::plugin_api::Interface;
 use deno_core::plugin_api::Op;
 use deno_core::plugin_api::ZeroCopyBuf;
@@ -69,6 +67,20 @@ fn op_test_json_params_and_return(
   Op::Sync(serde_json::to_vec(&result).unwrap().into_boxed_slice())
 }
 
+const RGB_PIXEL_SIZE: usize = 3;
+const RGBA_PIXEL_SIZE: usize = 4;
+
+fn to_grey_scale(image_array: &mut[u8], pixel_size: usize) {
+  let image_array_length = image_array.len() - (image_array.len() % pixel_size);
+
+  for i in (0..image_array_length).step_by(pixel_size) {
+    let pixel_average = (((image_array[i] as u16) + (image_array[i + 1] as u16) + (image_array[i + 2] as u16)) / 3) as u8;
+    image_array[i] = pixel_average;
+    image_array[i + 1] = pixel_average;
+    image_array[i + 2] = pixel_average;
+  }
+}
+
 fn op_to_grey_scale(
   _interface: &mut dyn Interface,
   zero_copy: &mut [ZeroCopyBuf],
@@ -93,20 +105,6 @@ fn op_to_grey_scale(
   Op::Sync(Box::new([]))
 }
 
-const RGB_PIXEL_SIZE: usize = 3;
-const RGBA_PIXEL_SIZE: usize = 4;
-
-fn to_grey_scale(image_array: &mut[u8], pixel_size: usize) {
-  let image_array_length = image_array.len() - (image_array.len() % pixel_size);
-
-  for i in (0..image_array_length).step_by(pixel_size) {
-    let pixel_average = (((image_array[i] as u16) + (image_array[i + 1] as u16) + (image_array[i + 2] as u16)) / 3) as u8;
-    image_array[i] = pixel_average;
-    image_array[i + 1] = pixel_average;
-    image_array[i + 2] = pixel_average;
-  }
-}
-
 fn op_to_grey_scale_async(
   _interface: &mut dyn Interface,
   zero_copy: &mut [ZeroCopyBuf],
@@ -125,21 +123,29 @@ fn op_to_grey_scale_async(
   let arg1 = &mut zero_copy[1];
   let mut arg1 = arg1.clone();
 
-  let fut = tokio::task::spawn_blocking(move || {
-    let image_array: &mut[u8] = arg1.as_mut();
+  let fut = async move {
+    let (tx, rx) = futures::channel::oneshot::channel::<Result<(), ()>>();
+    // `tokio::task::spawn_blocking` should be used instead of spawning a new thread
+    // but https://github.com/denoland/deno/issues/8490 prevents plugin tokio usage at the moment.
+    std::thread::spawn(move || {
+      let image_array: &mut[u8] = arg1.as_mut();
 
-    println!("Rust: sleeping for 2000 ms (simulating a >2000 ms execution time)");
-    std::thread::sleep(std::time::Duration::from_secs(10));
+      println!("Rust: sleeping for 2000 ms (simulating a >2000 ms execution time)");
+      std::thread::sleep(std::time::Duration::from_secs(10));
 
-    to_grey_scale(image_array, pixel_size);
+      to_grey_scale(image_array, pixel_size);
 
-    println!("Rust: op_to_grey_scale_async() finished");
+      println!("Rust: op_to_grey_scale_async() finished");
+
+      tx.send(Ok(())).unwrap();
+    });
+    assert!(rx.await.is_ok());
 
     let result = serde_json::json!({
       "callId": call_id
     });
     serde_json::to_vec(&result).unwrap().into_boxed_slice()
-  }).map(|r| r.unwrap());
+  };
 
   Op::Async(fut.boxed())
 }

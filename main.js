@@ -1,9 +1,7 @@
-// Must be a .js file and not .ts
+// Rust plugin interaction must be done in a .js file and not .ts
 // or else it will error: `error: TS2339 [ERROR]: Property 'core' does not exist on type 'typeof Deno'.`
 // justification: https://github.com/denoland/deno/issues/5525
 // type definitions missing, at least noting that the example only works in JS and will fail to work in TS.
-
-// Copyright 2018-2020 the Deno authors. All rights reserved. MIT license.
 import { decode, encode } from "https://deno.land/x/jpegts@1.1/mod.ts";
 
 function resolveRustLibFilename(libName) {
@@ -30,19 +28,19 @@ const {
   toGreyScaleAsync,
 } = Deno.core.ops();
 if (!(helloWorld > 0)) {
-  throw "bad op id for testSync";
+  throw "bad op id for helloWorld";
 }
 if (!(testTextParamsAndReturn > 0)) {
-  throw "bad op id for testAsync";
+  throw "bad op id for testTextParamsAndReturn";
 }
 if (!(testJsonParamsAndReturn > 0)) {
-  throw "bad op id for toGreyScale";
+  throw "bad op id for testJsonParamsAndReturn";
 }
 if (!(toGreyScale > 0)) {
   throw "bad op id for toGreyScale";
 }
 if (!(toGreyScaleAsync > 0)) {
-  throw "bad op id for toGreyScale";
+  throw "bad op id for toGreyScaleAsync";
 }
 
 console.log("---------- hello world:");
@@ -103,7 +101,7 @@ console.log("\n---------- toGreyScale:");
 
 async function runToGreyScale(inputFilename, outputFilename) {
   // let raw = await Deno.readFile(`images/${file}`);
-  // Use the sync version of readFile to help highlight the `Deno.core.dispatch` not returning until the sync rust op is finished, effectively stoping deno's world.
+  // Using the sync version of readFile to help highlight the `Deno.core.dispatch` not returning until the sync rust op is finished, effectively stoping deno's world.
   let raw = Deno.readFileSync(`images/${inputFilename}`);
   const image = decode(raw);
   const textEncoder = new TextEncoder();
@@ -128,8 +126,8 @@ async function runToGreyScale(inputFilename, outputFilename) {
   );
 }
 
-// await runToGreyScale("dice.jpg", "dice.jpg");
-// await runToGreyScale("dino.jpg", "dino.jpg");
+await runToGreyScale("dice.jpg", "dice.jpg");
+await runToGreyScale("dino.jpg", "dino.jpg");
 
 console.log("\n---------- toGreyScale hangs deno?:");
 
@@ -154,7 +152,7 @@ async function runToGreyScaleHangTest() {
   await toGreyScalePromise;
 }
 
-// await runToGreyScaleHangTest();
+await runToGreyScaleHangTest();
 
 console.log("\n---------- toGreyScaleAsync:");
 
@@ -214,7 +212,7 @@ function registerOpAsyncHandler(opId) {
 
 async function runToGreyScaleAsync(inputFilename, outputFilename) {
   // let raw = await Deno.readFile(`images/${file}`);
-  // Use the sync version of readFile to help highlight the `Deno.core.dispatch` not returning until the sync rust op is finished, effectively stoping deno's world.
+  // Using the sync version of readFile to help highlight the `Deno.core.dispatch` not returning until the sync rust op is finished, effectively stoping deno's world.
   let raw = Deno.readFileSync(`images/${inputFilename}`);
   const image = decode(raw);
   const textEncoder = new TextEncoder();
@@ -242,10 +240,10 @@ async function runToGreyScaleAsync(inputFilename, outputFilename) {
   );
 }
 
-// await Promise.all([
-//   runToGreyScaleAsync("dice.jpg", "async-dice.jpg"),
-//   runToGreyScaleAsync("dino.jpg", "async-dino.jpg"),
-// ]);
+await Promise.all([
+  runToGreyScaleAsync("dice.jpg", "async-dice.jpg"),
+  runToGreyScaleAsync("dino.jpg", "async-dino.jpg"),
+]);
 
 console.log("\n---------- toGreyScaleAsync hangs deno?:");
 

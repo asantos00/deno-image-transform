@@ -1,7 +1,7 @@
 // Rust plugin interaction must be done in a .js file and not .ts
 // or else it will error: `error: TS2339 [ERROR]: Property 'core' does not exist on type 'typeof Deno'.`
 // justification: https://github.com/denoland/deno/issues/5525
-// type definitions missing, at least noting that the example only works in JS and will fail to work in TS.
+// type definitions missing due to unstable rust plugin API.
 import { decode, encode } from "https://deno.land/x/jpegts@1.1/mod.ts";
 
 function resolveRustLibFilename(libName) {
